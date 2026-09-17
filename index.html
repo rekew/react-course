@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JS Runtime and Async Homework</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>JavaScript Runtime and Async</h1>
+    <p>Closures, Call Stack, Promises, async/await, Event Loop, Tasks &amp; Microtasks</p>
+  </header>
+
+  <main>
+    <section class="controls">
+      <button id="runSequentialBtn">Run Sequential</button>
+      <button id="runConcurrentBtn">Run Concurrent</button>
+      <button id="runLoopDemoBtn">Run Event Loop Demo</button>
+    </section>
+
+    <section id="tasks" class="task-grid"></section>
+
+    <section class="panels">
+      <div class="panel">
+        <h2>Benchmark: Sequential vs Concurrent</h2>
+        <div id="benchmarkResult">Not run yet.</div>
+      </div>
+      <div class="panel">
+        <h2>Event Loop Demo</h2>
+        <h3>Expected output (written before running)</h3>
+        <pre id="expectedOutput"></pre>
+        <h3>Actual output</h3>
+        <pre id="actualOutput">Not run yet.</pre>
+      </div>
+      <div class="panel">
+        <h2>Log</h2>
+        <pre id="log"></pre>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/task.js"></script>
+  <script src="js/logger.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/runner.js"></script>
+  <script src="js/eventLoopDemo.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
