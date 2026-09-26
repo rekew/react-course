@@ -1,10 +1,8 @@
-function App() {
+import { DashboardPage } from './features/courses/DashboardPage'
 
-  return (
-    <>
-      <div className='text-red-600'>test</div>
-    </>
-  )
+function App() {
+  console.log("render App");
+  return <DashboardPage />
 }
 
 export default App
