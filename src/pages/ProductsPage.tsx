@@ -1,4 +1,5 @@
 import { useSearchParams } from 'react-router-dom'
+import Filters from '../components/Filters.tsx'
 import ProductCard from '../components/ProductCard.tsx'
 import SearchBar from '../components/SearchBar.tsx'
 import { Button } from '../components/ui/button.tsx'
@@ -8,12 +9,27 @@ export default function ProductsPage() {
   const { products, loading, error, refetch } = useProducts()
   const [searchParams] = useSearchParams()
   const query = searchParams.get('q') ?? ''
+  const category = searchParams.get('category') ?? ''
+  const ratingParam = searchParams.get('rating')
+  const parsedRating = ratingParam ? Number(ratingParam) : 0
+  const minRating =
+    Number.isFinite(parsedRating) ? parsedRating : 0
   const normalizedQuery = query.trim().toLowerCase()
-  const filteredProducts = normalizedQuery
-    ? products.filter((product) =>
-        product.title.toLowerCase().includes(normalizedQuery),
-      )
-    : products
+  const normalizedCategory = category.trim().toLowerCase()
+  const hasActiveSearch = normalizedQuery.length > 0
+  const hasActiveFilters = normalizedCategory.length > 0 || minRating > 0
+
+  const filteredProducts = products.filter((product) => {
+    const matchesQuery =
+      !normalizedQuery ||
+      product.title.toLowerCase().includes(normalizedQuery)
+    const matchesCategory =
+      !normalizedCategory ||
+      product.category.toLowerCase() === normalizedCategory
+    const matchesRating = !minRating || product.rating >= minRating
+
+    return matchesQuery && matchesCategory && matchesRating
+  })
 
   return (
     <section className="space-y-6">
@@ -24,6 +40,8 @@ export default function ProductsPage() {
         </div>
         <SearchBar />
       </div>
+
+      <Filters />
 
       {loading && (
         <p role="status" className="text-sm text-muted-foreground">
@@ -45,8 +63,8 @@ export default function ProductsPage() {
 
       {!loading && !error && filteredProducts.length === 0 && (
         <p className="text-sm text-muted-foreground">
-          {normalizedQuery
-            ? `No products match "${query.trim()}".`
+          {hasActiveSearch || hasActiveFilters
+            ? 'No products match your search or filters.'
             : 'No products found.'}
         </p>
       )}
