@@ -43,7 +43,27 @@ export default function ProductDetails() {
   }
 
   if (notFound) {
-    return <p className="text-sm text-muted-foreground">Product not found.</p>
+    return (
+      <section className="flex min-h-[50vh] items-center justify-center">
+        <div className="w-full max-w-lg rounded-xl border bg-card p-8 text-center text-card-foreground">
+          <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+            Product not found
+          </p>
+          <h1 className="mt-3 text-2xl font-bold tracking-tight">
+            We couldn’t find that product
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            The product may have been removed or the link is incorrect.
+          </p>
+          <Link
+            to="/products"
+            className={buttonVariants({ className: 'mt-6' })}
+          >
+            Browse products
+          </Link>
+        </div>
+      </section>
+    )
   }
 
   if (!product) return null
