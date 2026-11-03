@@ -15,6 +15,7 @@ export default function SearchBar() {
         const next = new URLSearchParams(previous)
         if (value) next.set('q', value)
         else next.delete('q')
+        next.delete('page')
         return next
       },
       { replace: true, preventScrollReset: true },

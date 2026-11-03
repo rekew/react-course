@@ -12,6 +12,7 @@ import {
 } from './ui/select.tsx'
 
 const ALL = 'all'
+const DEFAULT_SORT = 'default'
 
 const ratingOptions = [
   { value: '4.5', label: '4.5 and up' },
@@ -19,6 +20,14 @@ const ratingOptions = [
   { value: '3', label: '3 and up' },
   { value: '2', label: '2 and up' },
   { value: '1', label: '1 and up' },
+]
+
+const sortOptions = [
+  { value: DEFAULT_SORT, label: 'Default' },
+  { value: 'price-asc', label: 'Price: Low to High' },
+  { value: 'price-desc', label: 'Price: High to Low' },
+  { value: 'rating-desc', label: 'Rating: High to Low' },
+  { value: 'title-asc', label: 'Title: A-Z' },
 ]
 
 function formatCategory(category: string) {
@@ -33,6 +42,7 @@ export default function Filters() {
   const [searchParams, setSearchParams] = useSearchParams()
   const category = searchParams.get('category') ?? ''
   const rating = searchParams.get('rating') ?? ''
+  const sort = searchParams.get('sort') ?? ''
   const hasActiveFilters = Boolean(category) || Boolean(rating)
 
   useEffect(() => {
@@ -56,12 +66,16 @@ export default function Filters() {
     return () => controller.abort()
   }, [])
 
-  function updateParam(key: 'category' | 'rating', value: string | null) {
+  function updateParam(
+    key: 'category' | 'rating' | 'sort',
+    value: string | null,
+  ) {
     setSearchParams(
       (previous) => {
         const next = new URLSearchParams(previous)
         if (value) next.set(key, value)
         else next.delete(key)
+        next.delete('page')
         return next
       },
       { replace: true, preventScrollReset: true },
@@ -74,6 +88,7 @@ export default function Filters() {
         const next = new URLSearchParams(previous)
         next.delete('category')
         next.delete('rating')
+        next.delete('page')
         return next
       },
       { replace: true, preventScrollReset: true },
@@ -122,6 +137,27 @@ export default function Filters() {
           <SelectContent>
             <SelectItem value={ALL}>Any rating</SelectItem>
             {ratingOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="w-full space-y-2 sm:w-52">
+        <Label htmlFor="sort-filter">Sort by</Label>
+        <Select
+          value={sort || DEFAULT_SORT}
+          onValueChange={(value) =>
+            updateParam('sort', value === DEFAULT_SORT ? null : value)
+          }
+        >
+          <SelectTrigger id="sort-filter" className="h-11 w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {sortOptions.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>

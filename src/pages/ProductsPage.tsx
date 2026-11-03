@@ -1,19 +1,25 @@
+import { useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Filters from '../components/Filters.tsx'
+import Pagination from '../components/Pagination.tsx'
 import ProductCard from '../components/ProductCard.tsx'
 import SearchBar from '../components/SearchBar.tsx'
 import { Button } from '../components/ui/button.tsx'
 import { useProducts } from '../hooks/useProducts.ts'
 
+const PAGE_SIZE = 12
+
 export default function ProductsPage() {
   const { products, loading, error, refetch } = useProducts()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const query = searchParams.get('q') ?? ''
   const category = searchParams.get('category') ?? ''
   const ratingParam = searchParams.get('rating')
+  const sort = searchParams.get('sort') ?? ''
+  const pageParam = searchParams.get('page')
   const parsedRating = ratingParam ? Number(ratingParam) : 0
   const minRating =
-    Number.isFinite(parsedRating) ? parsedRating : 0
+    Number.isFinite(parsedRating) && parsedRating > 0 ? parsedRating : 0
   const normalizedQuery = query.trim().toLowerCase()
   const normalizedCategory = category.trim().toLowerCase()
   const hasActiveSearch = normalizedQuery.length > 0
@@ -30,6 +36,57 @@ export default function ProductsPage() {
 
     return matchesQuery && matchesCategory && matchesRating
   })
+
+  const sortedProducts = [...filteredProducts]
+
+  if (sort === 'price-asc') {
+    sortedProducts.sort((a, b) => a.price - b.price)
+  } else if (sort === 'price-desc') {
+    sortedProducts.sort((a, b) => b.price - a.price)
+  } else if (sort === 'rating-desc') {
+    sortedProducts.sort((a, b) => b.rating - a.rating)
+  } else if (sort === 'title-asc') {
+    sortedProducts.sort((a, b) => a.title.localeCompare(b.title))
+  }
+
+  const parsedPage = pageParam ? Number(pageParam) : 1
+  const requestedPage =
+    Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1
+  const totalPages = Math.max(1, Math.ceil(sortedProducts.length / PAGE_SIZE))
+  const currentPage = Math.min(requestedPage, totalPages)
+  const paginatedProducts = sortedProducts.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  )
+
+  useEffect(() => {
+    if (loading || error) return
+
+    const desiredPageParam = currentPage === 1 ? null : String(currentPage)
+    if (pageParam === desiredPageParam) return
+
+    setSearchParams(
+      (previous) => {
+        const next = new URLSearchParams(previous)
+        if (desiredPageParam) next.set('page', desiredPageParam)
+        else next.delete('page')
+        return next
+      },
+      { replace: true, preventScrollReset: true },
+    )
+  }, [loading, error, currentPage, pageParam, setSearchParams])
+
+  function handlePageChange(page: number) {
+    setSearchParams(
+      (previous) => {
+        const next = new URLSearchParams(previous)
+        if (page > 1) next.set('page', String(page))
+        else next.delete('page')
+        return next
+      },
+      { replace: true, preventScrollReset: true },
+    )
+  }
 
   return (
     <section className="space-y-6">
@@ -61,7 +118,7 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {!loading && !error && filteredProducts.length === 0 && (
+      {!loading && !error && sortedProducts.length === 0 && (
         <p className="text-sm text-muted-foreground">
           {hasActiveSearch || hasActiveFilters
             ? 'No products match your search or filters.'
@@ -69,12 +126,20 @@ export default function ProductsPage() {
         </p>
       )}
 
-      {!loading && !error && filteredProducts.length > 0 && (
+      {!loading && !error && sortedProducts.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredProducts.map((product) => (
+          {paginatedProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
+      )}
+
+      {!loading && !error && totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
       )}
     </section>
   )
