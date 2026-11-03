@@ -20,10 +20,23 @@ export interface ProductsResponse {
   limit: number
 }
 
+export class ApiError extends Error {
+  readonly status: number
+
+  constructor(status: number, message: string) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+  }
+}
+
 async function request<T>(path: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(`${BASE_URL}${path}`, { signal })
   if (!response.ok) {
-    throw new Error(`Request failed: ${response.status} ${response.statusText}`)
+    throw new ApiError(
+      response.status,
+      `Request failed: ${response.status} ${response.statusText}`,
+    )
   }
   return response.json() as Promise<T>
 }
