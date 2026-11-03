@@ -1,15 +1,28 @@
+import { useSearchParams } from 'react-router-dom'
 import ProductCard from '../components/ProductCard.tsx'
+import SearchBar from '../components/SearchBar.tsx'
 import { Button } from '../components/ui/button.tsx'
 import { useProducts } from '../hooks/useProducts.ts'
 
 export default function ProductsPage() {
   const { products, loading, error, refetch } = useProducts()
+  const [searchParams] = useSearchParams()
+  const query = searchParams.get('q') ?? ''
+  const normalizedQuery = query.trim().toLowerCase()
+  const filteredProducts = normalizedQuery
+    ? products.filter((product) =>
+        product.title.toLowerCase().includes(normalizedQuery),
+      )
+    : products
 
   return (
     <section className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Products</h1>
-        <p className="text-muted-foreground">Browse our product catalog.</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">Products</h1>
+          <p className="text-muted-foreground">Browse our product catalog.</p>
+        </div>
+        <SearchBar />
       </div>
 
       {loading && (
@@ -30,13 +43,17 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {!loading && !error && products.length === 0 && (
-        <p className="text-sm text-muted-foreground">No products found.</p>
+      {!loading && !error && filteredProducts.length === 0 && (
+        <p className="text-sm text-muted-foreground">
+          {normalizedQuery
+            ? `No products match "${query.trim()}".`
+            : 'No products found.'}
+        </p>
       )}
 
-      {!loading && !error && products.length > 0 && (
+      {!loading && !error && filteredProducts.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {products.map((product) => (
+          {filteredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
