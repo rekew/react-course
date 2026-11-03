@@ -8,7 +8,6 @@ export default function RootLayout() {
       <main className="flex-1">
         <div className="mx-auto w-full max-w-[1100px] px-4 py-8">
           <Outlet />
-          <Outlet />
         </div>
       </main>
       <footer className="border-t">
