@@ -5,12 +5,18 @@ interface UseProductsResult {
   products: Product[]
   loading: boolean
   error: string | null
+  refetch: () => void
 }
 
 export function useProducts(): UseProductsResult {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
+
+  const refetch = () => {
+    setReloadKey((key) => key + 1)
+  }
 
   useEffect(() => {
     const controller = new AbortController()
@@ -35,7 +41,7 @@ export function useProducts(): UseProductsResult {
     loadProducts()
 
     return () => controller.abort()
-  }, [])
+  }, [reloadKey])
 
-  return { products, loading, error }
+  return { products, loading, error, refetch }
 }
