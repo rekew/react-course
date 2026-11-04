@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { formatCategory } from '../lib/format.ts'
 import { getCategories } from '../services/service.ts'
 import { Button } from './ui/button.tsx'
 import { Label } from './ui/label.tsx'
@@ -29,12 +30,6 @@ const sortOptions = [
   { value: 'rating-desc', label: 'Rating: High to Low' },
   { value: 'title-asc', label: 'Title: A-Z' },
 ]
-
-function formatCategory(category: string) {
-  return category
-    .replace(/-/g, ' ')
-    .replace(/\b\w/g, (character) => character.toUpperCase())
-}
 
 export default function Filters() {
   const [categories, setCategories] = useState<string[]>([])

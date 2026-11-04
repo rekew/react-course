@@ -1,12 +1,7 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button, buttonVariants } from '../components/ui/button.tsx'
 import { useProduct } from '../hooks/useProduct.ts'
-
-function formatCategory(category: string) {
-  return category
-    .replace(/-/g, ' ')
-    .replace(/\b\w/g, (character) => character.toUpperCase())
-}
+import { formatCategory } from '../lib/format.ts'
 
 function availabilityClass(status: string) {
   switch (status.toLowerCase()) {

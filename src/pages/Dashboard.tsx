@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '../components/ui/select.tsx'
 import { useProducts } from '../hooks/useProducts.ts'
+import { formatCategory } from '../lib/format.ts'
 import type { Product } from '../services/service.ts'
 
 const ALL = 'all'
@@ -21,12 +22,6 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
 })
 
 const numberFormatter = new Intl.NumberFormat('en-US')
-
-function formatCategory(category: string) {
-  return category
-    .replace(/-/g, ' ')
-    .replace(/\b\w/g, (character) => character.toUpperCase())
-}
 
 function countBy(values: string[]) {
   return values.reduce<Record<string, number>>((counts, value) => {
