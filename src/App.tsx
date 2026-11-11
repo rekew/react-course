@@ -6,6 +6,7 @@ import Home from './pages/Home.tsx'
 import Login from './pages/Login.tsx'
 import NotFound from './pages/NotFound.tsx'
 import ProductsPage from './pages/ProductsPage.tsx'
+import Signup from './pages/Signup.tsx'
 
 const About = lazy(() => import('./pages/About.tsx'))
 const Dashboard = lazy(() => import('./pages/Dashboard.tsx'))
@@ -22,6 +23,7 @@ function App() {
           <Route path="products/:id" element={<ProductDetails />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="login" element={<Login />} />
+          <Route path="signup" element={<Signup />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
