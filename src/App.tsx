@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import Loader from './components/Loader.tsx'
+import ProtectedRoute from './components/ProtectedRoute.tsx'
 import RootLayout from './layouts/RootLayout.tsx'
 import Home from './pages/Home.tsx'
 import Login from './pages/Login.tsx'
@@ -11,6 +12,7 @@ import Signup from './pages/Signup.tsx'
 const About = lazy(() => import('./pages/About.tsx'))
 const Dashboard = lazy(() => import('./pages/Dashboard.tsx'))
 const ProductDetails = lazy(() => import('./pages/ProductDetails.tsx'))
+const Profile = lazy(() => import('./pages/Profile.tsx'))
 
 function App() {
   return (
@@ -24,6 +26,9 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="login" element={<Login />} />
           <Route path="signup" element={<Signup />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="profile" element={<Profile />} />
+          </Route>
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

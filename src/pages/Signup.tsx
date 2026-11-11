@@ -1,5 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/button.tsx'
 import { Input } from '../components/ui/input.tsx'
 import { Label } from '../components/ui/label.tsx'
@@ -17,7 +17,8 @@ interface FieldErrors {
 }
 
 export default function Signup() {
-  const { error, signup, clearError } = useAuth()
+  const { user, error, signup, clearError } = useAuth()
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -29,6 +30,12 @@ export default function Signup() {
   useEffect(() => {
     clearError()
   }, [clearError])
+
+  useEffect(() => {
+    if (user) {
+      navigate('/', { replace: true })
+    }
+  }, [user, navigate])
 
   function clearFieldError(field: keyof FieldErrors) {
     setFieldErrors((previous) => ({ ...previous, [field]: undefined }))

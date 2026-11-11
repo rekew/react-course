@@ -1,5 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/button.tsx'
 import { Input } from '../components/ui/input.tsx'
 import { Label } from '../components/ui/label.tsx'
@@ -15,18 +15,37 @@ interface FieldErrors {
   password?: string
 }
 
+interface LoginLocationState {
+  from?: {
+    pathname?: string
+    search?: string
+  }
+}
+
 export default function Login() {
-  const { error, login, signInWithGoogle, clearError } = useAuth()
+  const { user, error, login, signInWithGoogle, clearError } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [submitting, setSubmitting] = useState(false)
 
   const authError = getAuthErrorMessage(error)
+  const locationState = location.state as LoginLocationState | null
+  const redirectTo = locationState?.from
+    ? `${locationState.from.pathname ?? '/'}${locationState.from.search ?? ''}`
+    : '/'
 
   useEffect(() => {
     clearError()
   }, [clearError])
+
+  useEffect(() => {
+    if (user) {
+      navigate(redirectTo, { replace: true })
+    }
+  }, [user, navigate, redirectTo])
 
   function handleEmailChange(event: ChangeEvent<HTMLInputElement>) {
     setEmail(event.target.value)
