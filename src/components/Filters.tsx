@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useCategories } from '../hooks/useCategories.ts'
 import { formatCategory } from '../lib/format.ts'
-import { getCategories } from '../services/service.ts'
 import { Button } from './ui/button.tsx'
 import { Label } from './ui/label.tsx'
 import {
@@ -32,34 +31,12 @@ const sortOptions = [
 ]
 
 export default function Filters() {
-  const [categories, setCategories] = useState<string[]>([])
-  const [categoriesLoading, setCategoriesLoading] = useState(true)
+  const { categories, loading: categoriesLoading } = useCategories()
   const [searchParams, setSearchParams] = useSearchParams()
   const category = searchParams.get('category') ?? ''
   const rating = searchParams.get('rating') ?? ''
   const sort = searchParams.get('sort') ?? ''
   const hasActiveFilters = Boolean(category) || Boolean(rating)
-
-  useEffect(() => {
-    const controller = new AbortController()
-
-    async function loadCategories() {
-      try {
-        const data = await getCategories(controller.signal)
-        if (controller.signal.aborted) return
-        setCategories([...data].sort((a, b) => a.localeCompare(b)))
-      } catch {
-        if (controller.signal.aborted) return
-        setCategories([])
-      } finally {
-        if (!controller.signal.aborted) setCategoriesLoading(false)
-      }
-    }
-
-    loadCategories()
-
-    return () => controller.abort()
-  }, [])
 
   function updateParam(
     key: 'category' | 'rating' | 'sort',
