@@ -20,7 +20,7 @@ export class AuthServiceError extends Error {
   }
 }
 
-function toAuthServiceError(error: unknown): AuthServiceError {
+export function toAuthServiceError(error: unknown): AuthServiceError {
   if (error instanceof AuthServiceError) {
     return error
   }
