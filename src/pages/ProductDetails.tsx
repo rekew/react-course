@@ -82,31 +82,38 @@ export default function ProductDetails() {
     <section className="space-y-6">
       <CachedDataBanner cacheKey={cacheKey} />
 
-      <div className="flex flex-wrap gap-3">
-        <Button variant="outline" onClick={() => navigate(-1)}>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Button
+          variant="outline"
+          className="w-full sm:w-auto"
+          onClick={() => navigate(-1)}
+        >
           Back
         </Button>
         <Link
           to="/products"
-          className={buttonVariants({ variant: 'secondary' })}
+          className={buttonVariants({
+            variant: 'secondary',
+            className: 'w-full sm:w-auto',
+          })}
         >
           All products
         </Link>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className="grid min-w-0 grid-cols-1 gap-8 lg:grid-cols-2">
         <img
           src={product.images[0] ?? product.thumbnail}
           alt={product.title}
-          className="aspect-square w-full rounded-xl border bg-card object-contain p-4"
+          className="h-auto max-h-[70dvh] w-full rounded-xl border bg-card object-contain p-4 lg:max-h-none"
         />
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <div className="space-y-3">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               {formatCategory(product.category)}
             </p>
-            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            <h1 className="break-words text-3xl font-bold tracking-tight sm:text-4xl">
               {product.title}
             </h1>
             <p className="text-sm text-muted-foreground">
@@ -120,21 +127,21 @@ export default function ProductDetails() {
                 {product.discountPercentage.toFixed(1)}% off
               </span>
             </div>
-            <p className="text-[1.0625rem] leading-relaxed text-muted-foreground">
+            <p className="break-words text-[1.0625rem] leading-relaxed text-muted-foreground">
               {product.description}
             </p>
           </div>
 
-          <dl className="grid gap-3 sm:grid-cols-2">
+          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {details.map((detail) => (
               <div
                 key={detail.label}
-                className="rounded-lg border bg-card p-3"
+                className="min-w-0 rounded-lg border bg-card p-3"
               >
                 <dt className="text-xs uppercase tracking-wide text-muted-foreground">
                   {detail.label}
                 </dt>
-                <dd className="mt-1 text-sm font-medium">
+                <dd className="mt-1 break-words text-sm font-medium">
                   {detail.label === 'Availability' ? (
                     <span
                       className={`inline-flex rounded-md px-2 py-1 text-xs font-medium ${availabilityClass(product.availabilityStatus)}`}

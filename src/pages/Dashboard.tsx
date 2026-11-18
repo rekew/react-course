@@ -98,15 +98,15 @@ export default function Dashboard() {
 
   return (
     <section className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-2">
+      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0 space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">
             An overview of your product catalog.
           </p>
         </div>
 
-        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-end">
+        <div className="flex w-full min-w-0 flex-col gap-3 sm:w-auto sm:flex-row sm:items-end">
           <div className="w-full space-y-2 sm:w-56">
             <Label htmlFor="dashboard-category">Category</Label>
             <Select
@@ -212,7 +212,7 @@ export default function Dashboard() {
             />
           </div>
 
-          <div className="rounded-xl border bg-card p-5 text-card-foreground">
+          <div className="min-w-0 rounded-xl border bg-card p-5 text-card-foreground">
             <h2 className="text-lg font-semibold tracking-tight">
               Top rated products
             </h2>

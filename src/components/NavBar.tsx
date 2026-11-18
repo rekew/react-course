@@ -148,7 +148,7 @@ export default function NavBar() {
         {isMenuOpen && (
           <div
             id="mobile-navigation"
-            className="absolute inset-x-0 top-full z-40 mt-1 flex flex-col gap-1 rounded-lg border bg-background p-3 shadow-lg md:hidden"
+            className="absolute inset-x-0 top-full z-40 mt-1 flex max-h-[calc(100dvh-4.5rem)] flex-col gap-1 overflow-y-auto rounded-lg border bg-background p-3 shadow-lg md:hidden"
           >
             {navigationLinks}
           </div>

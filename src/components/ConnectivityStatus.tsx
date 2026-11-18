@@ -68,7 +68,7 @@ export default function ConnectivityStatus() {
         <div
           role="status"
           aria-live="polite"
-          className="pointer-events-none fixed right-4 bottom-20 z-50 flex max-w-[calc(100vw-2rem)] items-center gap-3 rounded-lg border bg-background px-4 py-3 text-sm shadow-lg"
+          className="pointer-events-none fixed inset-x-3 bottom-24 z-50 flex max-h-[calc(100dvh-1.5rem)] items-center gap-3 overflow-y-auto rounded-lg border bg-background px-4 py-3 text-sm shadow-lg sm:inset-x-auto sm:right-4 sm:bottom-20"
         >
           {toast.isOnline ? (
             <Wifi aria-hidden="true" className="size-4 text-emerald-600" />
