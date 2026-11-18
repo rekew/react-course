@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Filters from '../components/Filters.tsx'
+import CachedDataBanner from '../components/CachedDataBanner.tsx'
 import Pagination from '../components/Pagination.tsx'
 import ProductCard from '../components/ProductCard.tsx'
 import SearchBar from '../components/SearchBar.tsx'
@@ -10,7 +11,7 @@ import { useProducts } from '../hooks/useProducts.ts'
 const PAGE_SIZE = 12
 
 export default function ProductsPage() {
-  const { products, loading, error, refetch } = useProducts()
+  const { products, loading, error, refetch, cacheKey } = useProducts()
   const [searchParams, setSearchParams] = useSearchParams()
   const query = searchParams.get('q') ?? ''
   const category = searchParams.get('category') ?? ''
@@ -99,6 +100,8 @@ export default function ProductsPage() {
       </div>
 
       <Filters />
+
+      <CachedDataBanner cacheKey={cacheKey} />
 
       {loading && (
         <p role="status" className="text-sm text-muted-foreground">

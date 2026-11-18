@@ -1,5 +1,6 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button, buttonVariants } from '../components/ui/button.tsx'
+import CachedDataBanner from '../components/CachedDataBanner.tsx'
 import { useProduct } from '../hooks/useProduct.ts'
 import { formatCategory } from '../lib/format.ts'
 
@@ -19,7 +20,7 @@ function availabilityClass(status: string) {
 export default function ProductDetails() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { product, loading, error, notFound } = useProduct(id)
+  const { product, loading, error, notFound, cacheKey } = useProduct(id)
 
   if (loading) {
     return (
@@ -79,6 +80,8 @@ export default function ProductDetails() {
 
   return (
     <section className="space-y-6">
+      <CachedDataBanner cacheKey={cacheKey} />
+
       <div className="flex flex-wrap gap-3">
         <Button variant="outline" onClick={() => navigate(-1)}>
           Back

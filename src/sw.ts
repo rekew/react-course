@@ -301,7 +301,19 @@ async function matchFreshApiResponse(
     const cachedAt = metadata ? Number(await metadata.text()) : Number.NaN
 
     if (Number.isFinite(cachedAt) && Date.now() - cachedAt <= API_MAX_AGE_MS) {
-      return cachedResponse
+      const headers = new Headers(cachedResponse.headers)
+      headers.set('X-From-Cache', 'true')
+      headers.set('X-Cache-Updated-At', String(cachedAt))
+      headers.set(
+        'Access-Control-Expose-Headers',
+        'X-From-Cache, X-Cache-Updated-At',
+      )
+
+      return new Response(cachedResponse.body, {
+        status: cachedResponse.status,
+        statusText: cachedResponse.statusText,
+        headers,
+      })
     }
 
     await cache.delete(request, { ignoreVary: true })

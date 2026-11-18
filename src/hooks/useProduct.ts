@@ -3,6 +3,7 @@ import { queryKeys } from '../lib/queryKeys.ts'
 import {
   ApiError,
   getProductById,
+  getProductCacheKey,
   type Product,
 } from '../services/service.ts'
 
@@ -11,6 +12,7 @@ interface UseProductResult {
   loading: boolean
   error: string | null
   notFound: boolean
+  cacheKey: string | null
 }
 
 function parseProductId(id: string | undefined): number | null {
@@ -33,7 +35,13 @@ export function useProduct(id: string | undefined): UseProductResult {
   })
 
   if (numericId === null) {
-    return { product: null, loading: false, error: null, notFound: true }
+    return {
+      product: null,
+      loading: false,
+      error: null,
+      notFound: true,
+      cacheKey: null,
+    }
   }
 
   const notFound =
@@ -51,5 +59,6 @@ export function useProduct(id: string | undefined): UseProductResult {
           : 'Failed to load product'
         : null,
     notFound,
+    cacheKey: getProductCacheKey(numericId),
   }
 }

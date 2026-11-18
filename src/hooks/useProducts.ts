@@ -1,12 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '../lib/queryKeys.ts'
-import { getProducts, type Product } from '../services/service.ts'
+import {
+  getProducts,
+  getProductsCacheKey,
+  type Product,
+} from '../services/service.ts'
 
 interface UseProductsResult {
   products: Product[]
   loading: boolean
   error: string | null
   refetch: () => void
+  cacheKey: string
 }
 
 export function useProducts(): UseProductsResult {
@@ -26,5 +31,6 @@ export function useProducts(): UseProductsResult {
     refetch: () => {
       void query.refetch()
     },
+    cacheKey: getProductsCacheKey(),
   }
 }

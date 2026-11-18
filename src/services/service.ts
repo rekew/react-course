@@ -1,4 +1,10 @@
+import {
+  clearApiCacheStatus,
+  recordApiCacheStatus,
+} from '../pwa/apiCacheStatus.ts'
+
 const BASE_URL = 'https://dummyjson.com'
+const PRODUCTS_LIST_PATH = '/products?limit=0'
 
 export interface Product {
   id: number
@@ -34,7 +40,18 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(`${BASE_URL}${path}`, { signal })
+  const url = `${BASE_URL}${path}`
+  let response: Response
+
+  try {
+    response = await fetch(url, { signal })
+  } catch (error) {
+    clearApiCacheStatus(url)
+    throw error
+  }
+
+  recordApiCacheStatus(url, response)
+
   if (!response.ok) {
     throw new ApiError(
       response.status,
@@ -44,8 +61,16 @@ async function request<T>(path: string, signal?: AbortSignal): Promise<T> {
   return response.json() as Promise<T>
 }
 
+export function getProductsCacheKey(): string {
+  return `${BASE_URL}${PRODUCTS_LIST_PATH}`
+}
+
+export function getProductCacheKey(id: number): string {
+  return `${BASE_URL}/products/${id}`
+}
+
 export function getProducts(signal?: AbortSignal): Promise<ProductsResponse> {
-  return request<ProductsResponse>('/products?limit=0', signal)
+  return request<ProductsResponse>(PRODUCTS_LIST_PATH, signal)
 }
 
 export function getProductById(
