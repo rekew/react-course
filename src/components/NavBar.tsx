@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Menu, X } from 'lucide-react'
+import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.ts'
 import ConnectivityStatus from './ConnectivityStatus.tsx'
 
@@ -21,6 +22,35 @@ function getNavLinkClass({ isActive }: { isActive: boolean }) {
 export default function NavBar() {
   const { user, loading, logout } = useAuth()
   const [loggingOut, setLoggingOut] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const location = useLocation()
+  const navRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    setIsMenuOpen(false)
+  }, [location.pathname, location.search, location.hash])
+
+  useEffect(() => {
+    if (!isMenuOpen) return
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setIsMenuOpen(false)
+    }
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!navRef.current?.contains(event.target as Node)) {
+        setIsMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    document.addEventListener('pointerdown', handlePointerDown)
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.removeEventListener('pointerdown', handlePointerDown)
+    }
+  }, [isMenuOpen])
 
   async function handleLogout() {
     setLoggingOut(true)
@@ -31,42 +61,98 @@ export default function NavBar() {
     }
   }
 
+  const navigationLinks = (
+    <>
+      {links.map(({ to, label, end }) => (
+        <NavLink
+          key={to}
+          to={to}
+          end={end}
+          className={getNavLinkClass}
+          onClick={() => setIsMenuOpen(false)}
+        >
+          {label}
+        </NavLink>
+      ))}
+
+      {!loading &&
+        (user ? (
+          <>
+            <NavLink
+              to="/profile"
+              className={getNavLinkClass}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Profile
+            </NavLink>
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+            >
+              {loggingOut ? 'Logging out…' : 'Logout'}
+            </button>
+          </>
+        ) : (
+          <>
+            <NavLink
+              to="/login"
+              className={getNavLinkClass}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Login
+            </NavLink>
+            <NavLink
+              to="/signup"
+              className={getNavLinkClass}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Signup
+            </NavLink>
+          </>
+        ))}
+    </>
+  )
+
   return (
     <header className="border-b bg-background">
-      <nav className="mx-auto flex w-full max-w-[1100px] flex-wrap items-center gap-4 px-4 py-4">
-        {links.map(({ to, label, end }) => (
-          <NavLink key={to} to={to} end={end} className={getNavLinkClass}>
-            {label}
-          </NavLink>
-        ))}
+      <nav
+        ref={navRef}
+        className="app-container relative flex min-h-16 items-center gap-3 py-2"
+        aria-label="Main navigation"
+      >
+        <div className="hidden items-center gap-4 md:flex">
+          {navigationLinks}
+        </div>
 
-        {!loading &&
-          (user ? (
-            <>
-              <NavLink to="/profile" className={getNavLinkClass}>
-                Profile
-              </NavLink>
-              <button
-                type="button"
-                onClick={handleLogout}
-                disabled={loggingOut}
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
-              >
-                {loggingOut ? 'Logging out…' : 'Logout'}
-              </button>
-            </>
+        <div className="ml-auto">
+          <ConnectivityStatus />
+        </div>
+
+        <button
+          type="button"
+          className="inline-flex items-center justify-center rounded-lg border border-border text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:hidden"
+          aria-expanded={isMenuOpen}
+          aria-controls="mobile-navigation"
+          aria-label={isMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
+        >
+          {isMenuOpen ? (
+            <X aria-hidden="true" className="size-5" />
           ) : (
-            <>
-              <NavLink to="/login" className={getNavLinkClass}>
-                Login
-              </NavLink>
-              <NavLink to="/signup" className={getNavLinkClass}>
-                Signup
-              </NavLink>
-            </>
-          ))}
+            <Menu aria-hidden="true" className="size-5" />
+          )}
+        </button>
 
-        <ConnectivityStatus />
+        {isMenuOpen && (
+          <div
+            id="mobile-navigation"
+            className="absolute inset-x-0 top-full z-40 mt-1 flex flex-col gap-1 rounded-lg border bg-background p-3 shadow-lg md:hidden"
+          >
+            {navigationLinks}
+          </div>
+        )}
       </nav>
     </header>
   )

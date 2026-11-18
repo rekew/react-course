@@ -7,12 +7,12 @@ export default function RootLayout() {
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <NavBar />
       <main className="flex-1">
-        <div className="mx-auto w-full max-w-[1100px] px-4 py-8">
+        <div className="app-container py-8">
           <Outlet />
         </div>
       </main>
       <footer className="border-t">
-        <div className="mx-auto w-full max-w-[1100px] px-4 py-4 text-sm text-muted-foreground">
+        <div className="app-container py-4 text-sm text-muted-foreground">
           © {new Date().getFullYear()} Product Catalog
         </div>
       </footer>
