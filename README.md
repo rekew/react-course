@@ -36,6 +36,17 @@ Firebase Authentication and cached server data with TanStack Query.
 - Dashboard with statistics and category breakdowns.
 - SPA redirects for Netlify (`public/_redirects`).
 
+### PWA
+
+- Installable app manifest with standard and maskable icons.
+- Precached app shell and offline fallback page for navigation requests.
+- Service worker update banner that lets users apply a waiting update.
+- Runtime caching for public images/fonts and public product list/detail data.
+- Strict exclusion of authenticated, credentialed, and non-public API requests
+  from runtime API caching.
+- Offline/online connection status and cached-data timestamp indicator.
+- Responsive, touch-friendly layout and accessible mobile navigation.
+
 ### Caching
 
 Server data is fetched through TanStack Query hooks, not directly from UI
@@ -100,6 +111,27 @@ pnpm dev
 ```
 
 Open the local URL printed by Vite.
+
+### Build and test the PWA
+
+The service worker is intentionally disabled during `pnpm dev`. Build and serve
+the production bundle to test installability and offline behavior:
+
+```bash
+pnpm build
+pnpm preview
+```
+
+Open the preview URL in a browser, then:
+
+1. In DevTools → Application, verify the manifest and registered service worker.
+2. Visit `/products` and a product detail page while online to populate public
+   API cache entries.
+3. Switch DevTools Network to Offline and reload those pages; cached data should
+   render with its last-updated indicator.
+4. Navigate to an uncached route offline to verify the offline fallback.
+5. Use DevTools → Application → Service Workers to check for an update after a
+   new deployment, then apply it through the in-app update banner.
 
 ## Caching strategy
 
@@ -182,4 +214,29 @@ API and caching logic live in `src/services`, `src/hooks` and
 
 - Provide all `VITE_FIREBASE_*` variables in the hosting provider's environment.
 - Add the deployed domain to Firebase authorized domains.
-- `public/_redirects` contains the SPA fallback required by Netlify.
+- Netlify deployment files are copied from `public/` during the Vite build:
+  - `public/_redirects` provides the SPA fallback for all client routes.
+  - `public/_headers` serves `sw.js` with `Cache-Control: no-cache`, so clients
+    revalidate it instead of keeping an outdated worker script.
+  - `public/_headers` also sets manifest content type/revalidation headers and
+    allows the worker to control the root scope.
+- The service worker registers at
+  `import.meta.env.BASE_URL + 'sw.js'` with `import.meta.env.BASE_URL` as its
+  scope in `src/pwa/registerServiceWorker.ts`, so deployments under a Vite base
+  path remain correctly scoped.
+
+## PWA implementation checklist
+
+| Requirement | Implementation |
+| --- | --- |
+| Manifest | `index.html`, `public/manifest.webmanifest` |
+| App icons | `public/icons/icon-192.png`, `public/icons/icon-512.png`, `public/icons/icon-512-maskable.png` |
+| Service worker lifecycle | `src/pwa/registerServiceWorker.ts`, `src/sw.ts` |
+| Update flow | `src/hooks/usePwaUpdate.ts`, `src/components/PwaUpdateBanner.tsx`, `src/sw.ts` |
+| Runtime caching strategy: static assets | `src/sw.ts` |
+| Runtime caching strategy: public product API | `src/sw.ts`, `src/services/service.ts` |
+| Cache limits and expiry | `src/sw.ts` |
+| Offline fallback page | `public/offline-fallback.html`, `src/sw.ts` |
+| Online/offline indicator | `src/components/ConnectivityStatus.tsx`, `src/hooks/useOnlineStatus.ts` |
+| Cached-data indicator | `src/components/CachedDataBanner.tsx`, `src/pwa/apiCacheStatus.ts`, `src/sw.ts` |
+| Mobile layout and navigation | `src/index.css`, `src/components/NavBar.tsx`, `src/pages/ProductDetails.tsx`, `src/pages/Dashboard.tsx` |
