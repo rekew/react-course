@@ -71,8 +71,18 @@ const STATIC_ASSET_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1_000
 const STATIC_ASSET_PRUNE_INTERVAL_MS = 60_000
 const STATIC_ASSET_EXTENSIONS =
   /\.(?:avif|gif|ico|jpe?g|png|svg|webp|woff2?|ttf|otf)$/i
+const API_CACHE = 'api-cache-v1'
+const API_META_CACHE = 'api-cache-meta-v1'
+const API_MAX_ENTRIES = 50
+const API_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1_000
+const API_PRUNE_INTERVAL_MS = 60_000
+const API_NETWORK_TIMEOUT_MS = 3_000
+const PUBLIC_API_ORIGIN = 'https://dummyjson.com'
+const PUBLIC_API_LIST_PATH = '/products'
+const PUBLIC_API_DETAIL_PATH = /^\/products\/[1-9]\d*$/
 
 let lastStaticAssetPruneAt = 0
+let lastApiPruneAt = 0
 
 function isStaticAssetRequest(request: Request, url: URL): boolean {
   if (request.destination === 'image' || request.destination === 'font') {
@@ -87,6 +97,29 @@ function isCacheableResponse(response: Response): boolean {
   if (response.type !== 'basic' && response.type !== 'cors') return false
 
   return response.ok && response.status !== 206
+}
+
+function isPublicApiRequest(request: Request, url: URL): boolean {
+  if (url.origin !== PUBLIC_API_ORIGIN) return false
+  if (request.headers.has('authorization') || request.headers.has('cookie')) {
+    return false
+  }
+  if (request.credentials === 'include') return false
+
+  const queryEntries = [...url.searchParams.entries()]
+  const isProductList =
+    url.pathname === PUBLIC_API_LIST_PATH &&
+    queryEntries.length === 1 &&
+    queryEntries[0][0] === 'limit' &&
+    queryEntries[0][1] === '0'
+  const isProductDetail =
+    PUBLIC_API_DETAIL_PATH.test(url.pathname) && queryEntries.length === 0
+
+  return isProductList || isProductDetail
+}
+
+function isCacheableApiResponse(response: Response): boolean {
+  return response.type === 'cors' && response.ok && response.status !== 206
 }
 
 async function readCachedAt(request: Request): Promise<number | null> {
@@ -191,6 +224,127 @@ async function cacheStaticAsset(
   }
 }
 
+async function pruneApiCache(force = false): Promise<void> {
+  const now = Date.now()
+
+  if (!force && now - lastApiPruneAt < API_PRUNE_INTERVAL_MS) return
+
+  lastApiPruneAt = now
+
+  try {
+    const cache = await caches.open(API_CACHE)
+    const metaCache = await caches.open(API_META_CACHE)
+    const requests = await cache.keys()
+    const entries: { request: Request; cachedAt: number }[] = []
+
+    for (const request of requests) {
+      const metadata = await metaCache.match(request.url)
+      const cachedAt = metadata ? Number(await metadata.text()) : Number.NaN
+
+      if (!Number.isFinite(cachedAt) || now - cachedAt > API_MAX_AGE_MS) {
+        await cache.delete(request, { ignoreVary: true })
+        await metaCache.delete(request.url)
+      } else {
+        entries.push({ request, cachedAt })
+      }
+    }
+
+    if (entries.length > API_MAX_ENTRIES) {
+      entries.sort((a, b) => a.cachedAt - b.cachedAt)
+      const excess = entries.slice(0, entries.length - API_MAX_ENTRIES)
+
+      await Promise.all(
+        excess.map(async ({ request }) => {
+          await cache.delete(request, { ignoreVary: true })
+          await metaCache.delete(request.url)
+        }),
+      )
+    }
+  } catch {
+    return
+  }
+}
+
+async function cacheApiResponse(
+  request: Request,
+  response: Response,
+): Promise<void> {
+  try {
+    const cache = await caches.open(API_CACHE)
+    await cache.put(request, response)
+
+    const metaCache = await caches.open(API_META_CACHE)
+    await metaCache.put(
+      request.url,
+      new Response(String(Date.now()), {
+        headers: { 'content-type': 'text/plain' },
+      }),
+    )
+
+    const entryCount = (await cache.keys()).length
+    await pruneApiCache(entryCount > API_MAX_ENTRIES)
+  } catch {
+    return
+  }
+}
+
+async function matchFreshApiResponse(
+  request: Request,
+): Promise<Response | undefined> {
+  try {
+    const cache = await caches.open(API_CACHE)
+    const cachedResponse = await cache.match(request, { ignoreVary: true })
+    if (!cachedResponse) return undefined
+
+    const metaCache = await caches.open(API_META_CACHE)
+    const metadata = await metaCache.match(request.url)
+    const cachedAt = metadata ? Number(await metadata.text()) : Number.NaN
+
+    if (Number.isFinite(cachedAt) && Date.now() - cachedAt <= API_MAX_AGE_MS) {
+      return cachedResponse
+    }
+
+    await cache.delete(request, { ignoreVary: true })
+    await metaCache.delete(request.url)
+    return undefined
+  } catch {
+    return undefined
+  }
+}
+
+async function fetchWithTimeout(request: Request): Promise<Response> {
+  const controller = new AbortController()
+  const abortRequest = () => controller.abort()
+  const timeoutId = setTimeout(abortRequest, API_NETWORK_TIMEOUT_MS)
+
+  if (request.signal.aborted) abortRequest()
+  else request.signal.addEventListener('abort', abortRequest, { once: true })
+
+  try {
+    return await fetch(new Request(request, { signal: controller.signal }))
+  } finally {
+    clearTimeout(timeoutId)
+    request.signal.removeEventListener('abort', abortRequest)
+  }
+}
+
+async function handlePublicApiRequest(
+  event: FetchEvent,
+  request: Request,
+): Promise<Response> {
+  try {
+    const response = await fetchWithTimeout(request)
+
+    if (isCacheableApiResponse(response)) {
+      event.waitUntil(cacheApiResponse(request, response.clone()))
+    }
+
+    return response
+  } catch {
+    return (await matchFreshApiResponse(request)) ?? Response.error()
+  }
+}
+
 async function handleStaticAsset(
   event: FetchEvent,
   request: Request,
@@ -249,6 +403,8 @@ sw.addEventListener('activate', (event) => {
         CACHE_NAME,
         STATIC_ASSETS_CACHE,
         STATIC_ASSETS_META_CACHE,
+        API_CACHE,
+        API_META_CACHE,
       ])
 
       await Promise.all(
@@ -257,6 +413,7 @@ sw.addEventListener('activate', (event) => {
           .map((key) => caches.delete(key)),
       )
       await pruneStaticAssets(true)
+      await pruneApiCache(true)
       await sw.clients.claim()
     })(),
   )
@@ -276,6 +433,11 @@ sw.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return
 
   const url = new URL(request.url)
+
+  if (isPublicApiRequest(request, url)) {
+    event.respondWith(handlePublicApiRequest(event, request))
+    return
+  }
 
   if (request.mode === 'navigate') {
     if (url.origin !== sw.location.origin) return
