@@ -18,6 +18,10 @@ interface FetchEvent extends ExtendableEvent {
   respondWith(response: Response | Promise<Response>): void
 }
 
+interface MessageEvent extends ExtendableEvent {
+  data: unknown
+}
+
 interface ServiceWorkerScope {
   location: Location
   registration: { scope: string }
@@ -27,23 +31,44 @@ interface ServiceWorkerScope {
     listener: (event: ExtendableEvent) => void,
   ): void
   addEventListener(type: 'fetch', listener: (event: FetchEvent) => void): void
+  addEventListener(
+    type: 'message',
+    listener: (event: MessageEvent) => void,
+  ): void
   skipWaiting(): Promise<void>
 }
 
 const sw = self as unknown as ServiceWorkerScope
 
-const CACHE_NAME = 'app-shell-v1'
-const APP_SHELL_URL = new URL('index.html', sw.registration.scope).href
+const PRECACHE_MANIFEST = [...self.__WB_MANIFEST].sort((a, b) =>
+  a.url.localeCompare(b.url),
+)
 const PRECACHE_URLS = [
-  ...new Set(self.__WB_MANIFEST.map((entry) => entry.url)),
+  ...new Set(PRECACHE_MANIFEST.map((entry) => entry.url)),
 ]
+
+function hashManifest(entries: PrecacheEntry[]): string {
+  const input = entries
+    .map(({ url, revision }) => `${url}:${revision ?? ''}`)
+    .join('|')
+  let hash = 0x811c9dc5
+
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= input.charCodeAt(index)
+    hash = Math.imul(hash, 0x01000193)
+  }
+
+  return (hash >>> 0).toString(36)
+}
+
+const CACHE_NAME = `app-shell-${hashManifest(PRECACHE_MANIFEST)}`
+const APP_SHELL_URL = new URL('index.html', sw.registration.scope).href
 
 sw.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(CACHE_NAME)
       await cache.addAll(PRECACHE_URLS)
-      await sw.skipWaiting()
     })(),
   )
 })
@@ -62,6 +87,14 @@ sw.addEventListener('activate', (event) => {
   )
 })
 
+sw.addEventListener('message', (event) => {
+  const data = event.data as { type?: unknown } | null
+
+  if (data?.type === 'SKIP_WAITING') {
+    event.waitUntil(sw.skipWaiting())
+  }
+})
+
 sw.addEventListener('fetch', (event) => {
   const { request } = event
 
@@ -73,7 +106,10 @@ sw.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     event.respondWith(
       (async () => {
-        const cachedShell = await caches.match(APP_SHELL_URL)
+        const cache = await caches.open(CACHE_NAME)
+        const cachedShell = await cache.match(APP_SHELL_URL, {
+          ignoreVary: true,
+        })
         return cachedShell ?? fetch(request)
       })(),
     )
@@ -82,7 +118,8 @@ sw.addEventListener('fetch', (event) => {
 
   event.respondWith(
     (async () => {
-      const cachedResponse = await caches.match(request)
+      const cache = await caches.open(CACHE_NAME)
+      const cachedResponse = await cache.match(request, { ignoreVary: true })
       return cachedResponse ?? fetch(request)
     })(),
   )

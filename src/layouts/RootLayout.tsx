@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import NavBar from '../components/NavBar.tsx'
+import PwaUpdateBanner from '../components/PwaUpdateBanner.tsx'
 
 export default function RootLayout() {
   return (
@@ -15,6 +16,7 @@ export default function RootLayout() {
           © {new Date().getFullYear()} Product Catalog
         </div>
       </footer>
+      <PwaUpdateBanner />
     </div>
   )
 }
