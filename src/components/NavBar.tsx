@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.ts'
+import ConnectivityStatus from './ConnectivityStatus.tsx'
 
 const links = [
   { to: '/', label: 'Home', end: true },
@@ -64,6 +65,8 @@ export default function NavBar() {
               </NavLink>
             </>
           ))}
+
+        <ConnectivityStatus />
       </nav>
     </header>
   )
