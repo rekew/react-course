@@ -63,6 +63,7 @@ function hashManifest(entries: PrecacheEntry[]): string {
 
 const CACHE_NAME = `app-shell-${hashManifest(PRECACHE_MANIFEST)}`
 const APP_SHELL_URL = new URL('index.html', sw.registration.scope).href
+const OFFLINE_URL = new URL('offline-fallback.html', sw.registration.scope).href
 
 sw.addEventListener('install', (event) => {
   event.waitUntil(
@@ -106,11 +107,22 @@ sw.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     event.respondWith(
       (async () => {
-        const cache = await caches.open(CACHE_NAME)
-        const cachedShell = await cache.match(APP_SHELL_URL, {
-          ignoreVary: true,
-        })
-        return cachedShell ?? fetch(request)
+        try {
+          return await fetch(request)
+        } catch {
+          const cache = await caches.open(CACHE_NAME)
+          const cachedShell = await cache.match(APP_SHELL_URL, {
+            ignoreVary: true,
+          })
+
+          if (cachedShell) return cachedShell
+
+          const cachedOfflinePage = await cache.match(OFFLINE_URL, {
+            ignoreVary: true,
+          })
+
+          return cachedOfflinePage ?? Response.error()
+        }
       })(),
     )
     return

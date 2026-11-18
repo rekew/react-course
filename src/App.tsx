@@ -11,6 +11,7 @@ import Signup from './pages/Signup.tsx'
 
 const About = lazy(() => import('./pages/About.tsx'))
 const Dashboard = lazy(() => import('./pages/Dashboard.tsx'))
+const Offline = lazy(() => import('./pages/Offline.tsx'))
 const ProductDetails = lazy(() => import('./pages/ProductDetails.tsx'))
 const Profile = lazy(() => import('./pages/Profile.tsx'))
 
@@ -25,6 +26,7 @@ function App() {
           <Route path="products/:id" element={<ProductDetails />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="login" element={<Login />} />
+          <Route path="offline" element={<Offline />} />
           <Route path="signup" element={<Signup />} />
           <Route element={<ProtectedRoute />}>
             <Route path="profile" element={<Profile />} />
