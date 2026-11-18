@@ -6,6 +6,7 @@ import './index.css'
 import App from './App.tsx'
 import { queryClient } from './config/queryClient.ts'
 import { AuthProvider } from './contexts/AuthProvider.tsx'
+import { registerServiceWorker } from './pwa/registerServiceWorker.ts'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -18,3 +19,5 @@ createRoot(document.getElementById('root')!).render(
     </QueryClientProvider>
   </StrictMode>,
 )
+
+registerServiceWorker()
