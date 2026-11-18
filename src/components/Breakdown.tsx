@@ -20,7 +20,7 @@ export default function Breakdown({
   emptyMessage = 'No data available.',
 }: BreakdownProps) {
   return (
-    <div className="rounded-xl border bg-card p-5 text-card-foreground">
+    <div className="min-w-0 rounded-xl border bg-card p-5 text-card-foreground">
       <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
 
       {items.length === 0 ? (
@@ -32,18 +32,22 @@ export default function Breakdown({
 
             return (
               <div key={item.label}>
-                <div className="flex items-center justify-between gap-3 text-sm">
+                <div className="flex min-w-0 items-center justify-between gap-3 text-sm">
                   {item.href ? (
                     <Link
                       to={item.href}
-                      className="font-medium hover:underline"
+                      className="min-w-0 break-words font-medium hover:underline"
                     >
                       {item.label}
                     </Link>
                   ) : (
-                    <span className="font-medium">{item.label}</span>
+                    <span className="min-w-0 break-words font-medium">
+                      {item.label}
+                    </span>
                   )}
-                  <span className="text-muted-foreground">{item.value}</span>
+                  <span className="shrink-0 text-muted-foreground">
+                    {item.value}
+                  </span>
                 </div>
                 <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
                   <div

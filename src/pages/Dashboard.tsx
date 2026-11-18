@@ -171,7 +171,7 @@ export default function Dashboard() {
 
       {!loading && !error && totalProducts > 0 && (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <StatCard
               label="Total products"
               value={numberFormatter.format(totalProducts)}
@@ -199,7 +199,7 @@ export default function Dashboard() {
             />
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Breakdown
               title="Products by category"
               items={categoryBreakdown}

@@ -9,7 +9,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   return (
     <Link
       to={`/products/${product.id}`}
-      className="group flex h-full flex-col overflow-hidden rounded-xl border bg-card text-card-foreground transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      className="group flex h-full min-w-0 flex-col overflow-hidden rounded-xl border bg-card text-card-foreground transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
       <img
         className="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -21,7 +21,9 @@ export default function ProductCard({ product }: ProductCardProps) {
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {product.category}
         </p>
-        <h3 className="line-clamp-2 text-base font-semibold">{product.title}</h3>
+        <h3 className="line-clamp-2 break-words text-base font-semibold">
+          {product.title}
+        </h3>
         <div className="mt-auto flex items-center justify-between gap-3 pt-2">
           <span className="text-lg font-bold">${product.price.toFixed(2)}</span>
           <span className="text-sm text-muted-foreground">
