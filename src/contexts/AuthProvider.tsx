@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { onAuthStateChanged, type User } from 'firebase/auth'
+import { useCallback, useEffect, useMemo, type ReactNode } from 'react'
+import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from '../config/firebase.ts'
 import {
   AuthServiceError,
@@ -9,6 +9,16 @@ import {
   signInWithGoogle as signInWithGoogleRequest,
   toAuthServiceError,
 } from '../services/authService.ts'
+import {
+  authErrorCleared,
+  authErrorSet,
+  authLoadingChanged,
+  authUserChanged,
+  selectAuthError,
+  selectAuthLoading,
+  selectAuthUser,
+} from '../features/auth/authSlice.ts'
+import { useAppDispatch, useAppSelector } from '../store/hooks.ts'
 import { AuthContext, type AuthContextValue } from './AuthContext.ts'
 
 interface AuthProviderProps {
@@ -16,35 +26,59 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<AuthServiceError | null>(null)
+  const dispatch = useAppDispatch()
+  const user = useAppSelector(selectAuthUser)
+  const loading = useAppSelector(selectAuthLoading)
+  const storedError = useAppSelector(selectAuthError)
+
+  const error = useMemo(
+    () =>
+      storedError
+        ? new AuthServiceError(storedError.code, storedError.message)
+        : null,
+    [storedError],
+  )
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
       auth,
       (firebaseUser) => {
-        setUser(firebaseUser)
-        setLoading(false)
+        dispatch(
+          authUserChanged(
+            firebaseUser
+              ? { uid: firebaseUser.uid, email: firebaseUser.email }
+              : null,
+          ),
+        )
+        dispatch(authLoadingChanged(false))
       },
       (cause) => {
-        setError(toAuthServiceError(cause))
-        setLoading(false)
+        const authError = toAuthServiceError(cause)
+        dispatch(
+          authErrorSet({ code: authError.code, message: authError.message }),
+        )
+        dispatch(authLoadingChanged(false))
       },
     )
 
     return unsubscribe
-  }, [])
+  }, [dispatch])
 
-  const runAuthAction = useCallback(async (action: () => Promise<unknown>) => {
-    setError(null)
+  const runAuthAction = useCallback(
+    async (action: () => Promise<unknown>) => {
+      dispatch(authErrorCleared())
 
-    try {
-      await action()
-    } catch (cause) {
-      setError(toAuthServiceError(cause))
-    }
-  }, [])
+      try {
+        await action()
+      } catch (cause) {
+        const authError = toAuthServiceError(cause)
+        dispatch(
+          authErrorSet({ code: authError.code, message: authError.message }),
+        )
+      }
+    },
+    [dispatch],
+  )
 
   const signup = useCallback(
     (email: string, password: string) =>
@@ -68,7 +102,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [runAuthAction],
   )
 
-  const clearError = useCallback(() => setError(null), [])
+  const clearError = useCallback(
+    () => dispatch(authErrorCleared()),
+    [dispatch],
+  )
 
   const value = useMemo<AuthContextValue>(
     () => ({

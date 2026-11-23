@@ -1,9 +1,9 @@
 import { createContext } from 'react'
-import type { User } from 'firebase/auth'
+import type { SessionUser } from '../features/auth/authSlice.ts'
 import type { AuthServiceError } from '../services/authService.ts'
 
 export interface AuthContextValue {
-  user: User | null
+  user: SessionUser | null
   loading: boolean
   error: AuthServiceError | null
   signup: (email: string, password: string) => Promise<void>
