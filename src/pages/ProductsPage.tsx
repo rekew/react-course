@@ -6,12 +6,24 @@ import Pagination from '../components/Pagination.tsx'
 import ProductCard from '../components/ProductCard.tsx'
 import SearchBar from '../components/SearchBar.tsx'
 import { Button } from '../components/ui/button.tsx'
-import { useProducts } from '../hooks/useProducts.ts'
+import {
+  fetchProducts,
+  selectProductItems,
+  selectProductsError,
+  selectProductsStatus,
+} from '../features/products/productsSlice.ts'
+import { getProductsCacheKey } from '../services/service.ts'
+import { useAppDispatch, useAppSelector } from '../store/hooks.ts'
 
 const PAGE_SIZE = 12
 
 export default function ProductsPage() {
-  const { products, loading, error, refetch, cacheKey } = useProducts()
+  const products = useAppSelector(selectProductItems)
+  const status = useAppSelector(selectProductsStatus)
+  const error = useAppSelector(selectProductsError)
+  const dispatch = useAppDispatch()
+  const loading = status === 'idle' || status === 'loading'
+  const cacheKey = getProductsCacheKey()
   const [searchParams, setSearchParams] = useSearchParams()
   const query = searchParams.get('q') ?? ''
   const category = searchParams.get('category') ?? ''
@@ -59,6 +71,10 @@ export default function ProductsPage() {
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE,
   )
+
+  useEffect(() => {
+    void dispatch(fetchProducts())
+  }, [dispatch])
 
   useEffect(() => {
     if (loading || error) return
@@ -115,7 +131,12 @@ export default function ProductsPage() {
           className="flex flex-col items-start gap-3 rounded-xl border border-destructive/30 bg-card p-6"
         >
           <p className="text-sm text-destructive">{error}</p>
-          <Button variant="outline" onClick={refetch}>
+          <Button
+            variant="outline"
+            onClick={() => {
+              void dispatch(fetchProducts())
+            }}
+          >
             Retry
           </Button>
         </div>
