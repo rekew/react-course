@@ -7,12 +7,14 @@ export interface ProductsState {
   items: Product[]
   status: ProductsStatus
   error: string | null
+  requestId: string | null
 }
 
 const initialState: ProductsState = {
   items: [],
   status: 'idle',
   error: null,
+  requestId: null,
 }
 
 export const fetchProducts = createAsyncThunk<
@@ -45,18 +47,25 @@ const productsSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(fetchProducts.pending, (state) => {
+      .addCase(fetchProducts.pending, (state, action) => {
         state.status = 'loading'
         state.error = null
+        state.requestId = action.meta.requestId
       })
       .addCase(fetchProducts.fulfilled, (state, action) => {
+        if (state.requestId !== action.meta.requestId) return
+
         state.status = 'succeeded'
         state.items = action.payload
+        state.requestId = null
       })
       .addCase(fetchProducts.rejected, (state, action) => {
+        if (state.requestId !== action.meta.requestId) return
+
         state.status = 'failed'
         state.error =
           action.payload ?? action.error.message ?? 'Failed to load products'
+        state.requestId = null
       })
   },
 })
