@@ -20,7 +20,7 @@ function availabilityClass(status: string) {
 export default function ProductDetails() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { product, loading, error, notFound, cacheKey } = useProduct(id)
+  const { product, loading, error, notFound, cacheKey, retry } = useProduct(id)
 
   if (loading) {
     return (
@@ -32,9 +32,16 @@ export default function ProductDetails() {
 
   if (error) {
     return (
-      <p role="alert" className="text-sm text-destructive">
-        {error}
-      </p>
+      <section className="flex min-h-[40vh] items-center justify-center">
+        <div className="flex w-full max-w-lg flex-col items-start gap-4 rounded-xl border border-destructive/30 bg-card p-6">
+          <p role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
+          <Button variant="outline" onClick={retry}>
+            Retry
+          </Button>
+        </div>
+      </section>
     )
   }
 

@@ -16,6 +16,7 @@ interface UseProductResult {
   error: string | null
   notFound: boolean
   cacheKey: string | null
+  retry: () => void
 }
 
 function parseProductId(id: string | undefined): number | null {
@@ -46,6 +47,7 @@ export function useProduct(id: string | undefined): UseProductResult {
       error: null,
       notFound: true,
       cacheKey: null,
+      retry: () => undefined,
     }
   }
 
@@ -57,5 +59,8 @@ export function useProduct(id: string | undefined): UseProductResult {
     error: isCurrent ? error : null,
     notFound: isCurrent ? notFound : false,
     cacheKey: getProductCacheKey(numericId),
+    retry: () => {
+      void dispatch(fetchProductDetails(numericId))
+    },
   }
 }

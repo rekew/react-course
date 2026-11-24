@@ -2,7 +2,7 @@
 
 A React + TypeScript single-page application for browsing a product catalog,
 viewing product details and dashboard statistics. The project also includes
-Firebase Authentication and cached server data with TanStack Query.
+Firebase Authentication, Redux Toolkit state management and PWA offline support.
 
 ## Tech stack
 
@@ -11,7 +11,7 @@ Firebase Authentication and cached server data with TanStack Query.
 - React Router
 - Tailwind CSS + shadcn/ui-style components
 - Firebase Authentication
-- TanStack Query
+- Redux Toolkit + React Redux
 - DummyJSON API (`https://dummyjson.com`)
 
 ## Features
@@ -34,6 +34,7 @@ Firebase Authentication and cached server data with TanStack Query.
 - Product list with search, category/rating filters, sorting and pagination.
 - Product details page with 404 handling.
 - Dashboard with statistics and category breakdowns.
+- Redux-backed loading, error, empty and retry states for catalog data.
 - SPA redirects for Netlify (`public/_redirects`).
 
 ### PWA
@@ -49,9 +50,52 @@ Firebase Authentication and cached server data with TanStack Query.
 
 ### Caching
 
-Server data is fetched through TanStack Query hooks, not directly from UI
-components. `useProducts` and `useProduct` cache product data, and
-`useCategories` caches the category list used by filters.
+Catalog data is stored in Redux feature slices and fetched through typed hooks
+and `createAsyncThunk`. The Redux store is the single source of truth for the
+product list, product details and categories. `requestId` checks prevent an old
+request from overwriting newer data, while thunk conditions avoid duplicate
+requests during loading or after successful loads.
+
+The browser Service Worker separately caches public product list/detail API
+responses for offline use. `CachedDataBanner` reports when a response came
+from that cache. Authenticated Firebase data and credentials are never stored
+in the public API cache.
+
+Search, filtering, sorting and pagination are applied client-side to the
+Redux-backed product list. Their current values live in URL parameters so the
+state is shareable and survives navigation. Search updates the URL immediately
+because it does not create additional API requests.
+
+### Redux Toolkit
+
+The store is configured in `src/store/index.ts` and provided at the root in
+`src/main.tsx`. Feature state is split by responsibility:
+
+| Slice | Responsibility | Async work |
+| --- | --- | --- |
+| `auth` | Firebase session user and signup action state | `signupWithEmail` |
+| `products` | Product list, status, errors and request identity | `fetchProducts` |
+| `productDetails` | Current product, 404 state and request identity | `fetchProductDetails` |
+| `categories` | Category list, status and errors | `fetchCategories` |
+
+Each async thunk handles `pending`, `fulfilled` and `rejected` in
+`extraReducers`. The `products`, `categories` and `productDetails` slices
+track request IDs so stale responses cannot replace newer state.
+
+Reusable selectors are defined next to their slices. Memoized selectors built
+with `createSelector` derive filtered/sorted/paginated products, sorted
+categories and authentication state. Components use `useAppSelector` and
+`useAppDispatch` through feature hooks rather than accessing the store
+directly.
+
+Temporary form, menu, toast and submission state remains local to components.
+Firebase tokens and auth persistence remain managed by Firebase; Redux stores
+only the serializable session user and auth action state. `AuthContext` remains
+as the UI-facing facade for Firebase login, Google sign-in, logout and signup.
+
+The DummyJSON product API is read-only, so product create/update/delete
+mutations are not available. The existing signup mutation updates the Redux
+auth state after successful registration.
 
 ## Getting started
 
@@ -135,73 +179,49 @@ Open the preview URL in a browser, then:
 
 ## Caching strategy
 
-TanStack Query is configured in `src/config/queryClient.ts`:
+Redux keeps the current catalog state in memory while the Service Worker caches
+public network responses for offline use. The list request is fixed
+(`https://dummyjson.com/products?limit=0`); search, filtering, sorting and
+pagination are derived locally by selectors.
 
-- `staleTime: 60_000` — data is considered fresh for 1 minute. Fresh cached
-  data is served without a network request.
-- `gcTime: 5 * 60_000` — unused query data is garbage-collected after 5 minutes.
-- `retry: 2` — failed GET requests are retried twice with exponential backoff.
+Each catalog thunk accepts an `AbortSignal` from Redux Toolkit. Slice
+`requestId` checks ensure that a stale response cannot overwrite a newer
+request. Failed list, category and detail requests expose Retry controls, and
+the online reconnect handler repeats only Redux requests whose status is
+`failed`.
 
-Product details use a custom retry policy that does not retry `404` responses,
-so an invalid product is reported immediately.
+The Service Worker applies expiration and entry limits to static assets and
+public product API responses. Authenticated or credentialed requests are
+excluded from runtime API caching. The app displays the cache timestamp through
+`CachedDataBanner` when a public response was served offline.
 
-Query keys are defined in `src/lib/queryKeys.ts`:
+### Mutations
 
-```ts
-queryKeys.products.all          // ['products']
-queryKeys.products.list()       // ['products', 'list']
-queryKeys.products.detail(id)   // ['products', 'detail', String(id)]
-queryKeys.categories.all        // ['categories']
-queryKeys.categories.list()     // ['categories', 'list']
-```
-
-List and detail queries are separated, so different products never share a
-cache entry. The product list request is fixed (`/products?limit=0`); search,
-filtering, sorting and pagination are applied client-side to the cached list,
-so they do not require separate query keys.
-
-Query functions receive TanStack Query's `AbortSignal` and pass it to the API
-client. When a query key changes or a component unmounts, the stale request is
-aborted and cannot overwrite newer results.
-
-### Expiration and revalidation
-
-After `staleTime` expires, cached data is revalidated in the background while
-the previous data stays visible. Revalidation also happens on window focus when
-the data is stale. A manual refetch is triggered by the existing Retry buttons
-through each hook's `refetch`.
-
-### Cache invalidation
-
-The product API used by this project is read-only: there are no create, update
-or delete operations for products, and no mutations are implemented. Therefore
-there is currently no cache invalidation after mutations.
-
-If write operations are added later, invalidate the relevant resource after a
-successful mutation, for example:
-
-```ts
-queryClient.invalidateQueries({ queryKey: queryKeys.products.all })
-queryClient.invalidateQueries({ queryKey: queryKeys.categories.all })
-```
+The product API used by this project is read-only: there are no product create,
+update or delete endpoints. Account creation is implemented as the
+`signupWithEmail` thunk and updates the Redux auth state after Firebase accepts
+the new account.
 
 ## Project structure
 
 ```text
 src/
   components/       UI components, NavBar, ProtectedRoute
-  config/           Firebase and TanStack Query configuration
+  config/           Firebase and app configuration
   contexts/         AuthContext and AuthProvider
-  hooks/            useAuth, useProducts, useProduct, useCategories
-  lib/              query keys, auth form validation, formatting
+  features/         Redux slices, async thunks and selectors
+  hooks/            typed data/auth/PWA hooks
+  lib/              auth form validation, formatting and shared utilities
   pages/            route pages including Login, Signup, Profile
   services/         product API and Firebase auth service
+  store/            configureStore and typed Redux hooks
+  pwa/              Service Worker registration and cache status
 ```
 
 Authentication logic lives in `src/services/authService.ts` and
 `src/contexts/AuthProvider.tsx`; UI components consume it through `useAuth`.
-API and caching logic live in `src/services`, `src/hooks` and
-`src/lib/queryKeys.ts`.
+API requests live in `src/services`. Redux async orchestration and selectors
+live in `src/features`; hooks adapt that state for pages and components.
 
 ## Scripts
 
@@ -210,10 +230,14 @@ API and caching logic live in `src/services`, `src/hooks` and
 - `pnpm preview` — preview the production build
 - `pnpm lint` — run Oxlint
 
+There is currently no automated test script configured in `package.json`.
+
 ## Deployment notes
 
 - Provide all `VITE_FIREBASE_*` variables in the hosting provider's environment.
 - Add the deployed domain to Firebase authorized domains.
+- Build the app with `pnpm build` and publish the generated `dist` directory.
+- No public deployment URL is configured or verified in this repository.
 - Netlify deployment files are copied from `public/` during the Vite build:
   - `public/_redirects` provides the SPA fallback for all client routes.
   - `public/_headers` serves `sw.js` with `Cache-Control: no-cache`, so clients

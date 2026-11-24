@@ -31,7 +31,12 @@ const sortOptions = [
 ]
 
 export default function Filters() {
-  const { categories, loading: categoriesLoading } = useCategories()
+  const {
+    categories,
+    loading: categoriesLoading,
+    error: categoriesError,
+    retry: retryCategories,
+  } = useCategories()
   const [searchParams, setSearchParams] = useSearchParams()
   const category = searchParams.get('category') ?? ''
   const rating = searchParams.get('rating') ?? ''
@@ -68,85 +73,96 @@ export default function Filters() {
   }
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-      <div className="w-full space-y-2 sm:w-56">
-        <Label htmlFor="category-filter">Category</Label>
-        <Select
-          value={category || ALL}
-          onValueChange={(value) =>
-            updateParam('category', value === ALL ? null : value)
-          }
-        >
-          <SelectTrigger
-            id="category-filter"
-            className="h-11 w-full"
-            disabled={categoriesLoading}
+    <div className="space-y-3">
+      {categoriesError && (
+        <div className="flex flex-wrap items-center gap-3" role="alert">
+          <p className="text-sm text-destructive">{categoriesError}</p>
+          <Button type="button" variant="outline" onClick={retryCategories}>
+            Retry categories
+          </Button>
+        </div>
+      )}
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+        <div className="w-full space-y-2 sm:w-56">
+          <Label htmlFor="category-filter">Category</Label>
+          <Select
+            value={category || ALL}
+            onValueChange={(value) =>
+              updateParam('category', value === ALL ? null : value)
+            }
           >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>All categories</SelectItem>
-            {categories.map((option) => (
-              <SelectItem key={option} value={option}>
-                {formatCategory(option)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+            <SelectTrigger
+              id="category-filter"
+              className="h-11 w-full"
+              disabled={categoriesLoading}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>All categories</SelectItem>
+              {categories.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {formatCategory(option)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-      <div className="w-full space-y-2 sm:w-44">
-        <Label htmlFor="rating-filter">Minimum rating</Label>
-        <Select
-          value={rating || ALL}
-          onValueChange={(value) =>
-            updateParam('rating', value === ALL ? null : value)
-          }
+        <div className="w-full space-y-2 sm:w-44">
+          <Label htmlFor="rating-filter">Minimum rating</Label>
+          <Select
+            value={rating || ALL}
+            onValueChange={(value) =>
+              updateParam('rating', value === ALL ? null : value)
+            }
+          >
+            <SelectTrigger id="rating-filter" className="h-11 w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>Any rating</SelectItem>
+              {ratingOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="w-full space-y-2 sm:w-52">
+          <Label htmlFor="sort-filter">Sort by</Label>
+          <Select
+            value={sort || DEFAULT_SORT}
+            onValueChange={(value) =>
+              updateParam('sort', value === DEFAULT_SORT ? null : value)
+            }
+          >
+            <SelectTrigger id="sort-filter" className="h-11 w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {sortOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11"
+          onClick={resetFilters}
+          disabled={!hasActiveFilters}
         >
-          <SelectTrigger id="rating-filter" className="h-11 w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Any rating</SelectItem>
-            {ratingOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          Reset filters
+        </Button>
       </div>
-
-      <div className="w-full space-y-2 sm:w-52">
-        <Label htmlFor="sort-filter">Sort by</Label>
-        <Select
-          value={sort || DEFAULT_SORT}
-          onValueChange={(value) =>
-            updateParam('sort', value === DEFAULT_SORT ? null : value)
-          }
-        >
-          <SelectTrigger id="sort-filter" className="h-11 w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {sortOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <Button
-        type="button"
-        variant="outline"
-        className="h-11"
-        onClick={resetFilters}
-        disabled={!hasActiveFilters}
-      >
-        Reset filters
-      </Button>
     </div>
   )
 }

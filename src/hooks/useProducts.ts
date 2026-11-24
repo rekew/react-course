@@ -1,10 +1,12 @@
-import { useQuery } from '@tanstack/react-query'
-import { queryKeys } from '../lib/queryKeys.ts'
+import { useEffect } from 'react'
 import {
-  getProducts,
-  getProductsCacheKey,
-  type Product,
-} from '../services/service.ts'
+  fetchProducts,
+  selectProductItems,
+  selectProductsError,
+  selectProductsStatus,
+} from '../features/products/productsSlice.ts'
+import { getProductsCacheKey, type Product } from '../services/service.ts'
+import { useAppDispatch, useAppSelector } from '../store/hooks.ts'
 
 interface UseProductsResult {
   products: Product[]
@@ -15,21 +17,21 @@ interface UseProductsResult {
 }
 
 export function useProducts(): UseProductsResult {
-  const query = useQuery({
-    queryKey: queryKeys.products.list(),
-    queryFn: ({ signal }) => getProducts(signal),
-  })
+  const dispatch = useAppDispatch()
+  const products = useAppSelector(selectProductItems)
+  const status = useAppSelector(selectProductsStatus)
+  const error = useAppSelector(selectProductsError)
+
+  useEffect(() => {
+    void dispatch(fetchProducts())
+  }, [dispatch])
 
   return {
-    products: query.data?.products ?? [],
-    loading: query.isPending,
-    error: query.isError
-      ? query.error instanceof Error
-        ? query.error.message
-        : 'Failed to load products'
-      : null,
+    products,
+    loading: status === 'idle' || status === 'loading',
+    error,
     refetch: () => {
-      void query.refetch()
+      void dispatch(fetchProducts())
     },
     cacheKey: getProductsCacheKey(),
   }
