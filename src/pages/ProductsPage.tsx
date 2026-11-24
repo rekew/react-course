@@ -86,7 +86,7 @@ export default function ProductsPage() {
         else next.delete('page')
         return next
       },
-      { replace: true, preventScrollReset: true },
+      { preventScrollReset: true },
     )
   }
 

@@ -50,7 +50,7 @@ export default function Filters() {
         next.delete('page')
         return next
       },
-      { replace: true, preventScrollReset: true },
+      { preventScrollReset: true },
     )
   }
 
@@ -63,7 +63,7 @@ export default function Filters() {
         next.delete('page')
         return next
       },
-      { replace: true, preventScrollReset: true },
+      { preventScrollReset: true },
     )
   }
 
