@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select.tsx'
+import { useCategories } from '../hooks/useCategories.ts'
 import { useProducts } from '../hooks/useProducts.ts'
 import { formatCategory } from '../lib/format.ts'
 import type { Product } from '../services/service.ts'
@@ -32,12 +33,15 @@ function countBy(values: string[]) {
 
 export default function Dashboard() {
   const { products, loading, error, refetch } = useProducts()
+  const { categories: fetchedCategories } = useCategories()
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedCategory = searchParams.get('category') ?? ''
 
-  const categories = Array.from(
+  const productCategories = Array.from(
     new Set(products.map((product) => product.category)),
   ).sort((a, b) => a.localeCompare(b))
+  const categories =
+    fetchedCategories.length > 0 ? fetchedCategories : productCategories
 
   const filteredProducts = selectedCategory
     ? products.filter((product) => product.category === selectedCategory)

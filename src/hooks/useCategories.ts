@@ -1,6 +1,10 @@
-import { useQuery } from '@tanstack/react-query'
-import { queryKeys } from '../lib/queryKeys.ts'
-import { getCategories } from '../services/service.ts'
+import { useEffect } from 'react'
+import {
+  fetchCategories,
+  selectCategoriesStatus,
+  selectCategoryItems,
+} from '../features/categories/categoriesSlice.ts'
+import { useAppDispatch, useAppSelector } from '../store/hooks.ts'
 
 interface UseCategoriesResult {
   categories: string[]
@@ -8,15 +12,16 @@ interface UseCategoriesResult {
 }
 
 export function useCategories(): UseCategoriesResult {
-  const query = useQuery({
-    queryKey: queryKeys.categories.list(),
-    queryFn: ({ signal }) => getCategories(signal),
-  })
+  const dispatch = useAppDispatch()
+  const items = useAppSelector(selectCategoryItems)
+  const status = useAppSelector(selectCategoriesStatus)
+
+  useEffect(() => {
+    void dispatch(fetchCategories())
+  }, [dispatch])
 
   return {
-    categories: query.data
-      ? [...query.data].sort((a, b) => a.localeCompare(b))
-      : [],
-    loading: query.isPending,
+    categories: [...items].sort((a, b) => a.localeCompare(b)),
+    loading: status === 'idle' || status === 'loading',
   }
 }
