@@ -1,11 +1,14 @@
-import { useQuery } from '@tanstack/react-query'
-import { queryKeys } from '../lib/queryKeys.ts'
+import { useEffect } from 'react'
 import {
-  ApiError,
-  getProductById,
-  getProductCacheKey,
-  type Product,
-} from '../services/service.ts'
+  fetchProductDetails,
+  selectProductDetailsCurrentId,
+  selectProductDetailsError,
+  selectProductDetailsNotFound,
+  selectProductDetailsProduct,
+  selectProductDetailsStatus,
+} from '../features/productDetails/productDetailsSlice.ts'
+import { getProductCacheKey, type Product } from '../services/service.ts'
+import { useAppDispatch, useAppSelector } from '../store/hooks.ts'
 
 interface UseProductResult {
   product: Product | null
@@ -23,16 +26,18 @@ function parseProductId(id: string | undefined): number | null {
 
 export function useProduct(id: string | undefined): UseProductResult {
   const numericId = parseProductId(id)
+  const dispatch = useAppDispatch()
+  const product = useAppSelector(selectProductDetailsProduct)
+  const status = useAppSelector(selectProductDetailsStatus)
+  const error = useAppSelector(selectProductDetailsError)
+  const notFound = useAppSelector(selectProductDetailsNotFound)
+  const currentId = useAppSelector(selectProductDetailsCurrentId)
 
-  const query = useQuery({
-    queryKey: queryKeys.products.detail(id ?? ''),
-    queryFn: ({ signal }) => getProductById(numericId ?? '', signal),
-    enabled: numericId !== null,
-    retry: (failureCount, error) =>
-      error instanceof ApiError && error.status === 404
-        ? false
-        : failureCount < 2,
-  })
+  useEffect(() => {
+    if (numericId === null) return
+
+    void dispatch(fetchProductDetails(numericId))
+  }, [dispatch, numericId])
 
   if (numericId === null) {
     return {
@@ -44,21 +49,13 @@ export function useProduct(id: string | undefined): UseProductResult {
     }
   }
 
-  const notFound =
-    query.isError &&
-    query.error instanceof ApiError &&
-    query.error.status === 404
+  const isCurrent = currentId === numericId
 
   return {
-    product: query.data ?? null,
-    loading: query.isPending,
-    error:
-      query.isError && !notFound
-        ? query.error instanceof Error
-          ? query.error.message
-          : 'Failed to load product'
-        : null,
-    notFound,
+    product: isCurrent ? product : null,
+    loading: !isCurrent || status === 'idle' || status === 'loading',
+    error: isCurrent ? error : null,
+    notFound: isCurrent ? notFound : false,
     cacheKey: getProductCacheKey(numericId),
   }
 }
