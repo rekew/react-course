@@ -1,7 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Wifi, WifiOff } from 'lucide-react'
+import {
+  fetchCategories,
+  selectCategoriesStatus,
+} from '../features/categories/categoriesSlice.ts'
+import {
+  fetchProductDetails,
+  selectProductDetailsCurrentId,
+  selectProductDetailsNotFound,
+  selectProductDetailsStatus,
+} from '../features/productDetails/productDetailsSlice.ts'
+import {
+  fetchProducts,
+  selectProductsStatus,
+} from '../features/products/productsSlice.ts'
 import { useOnlineStatus } from '../hooks/useOnlineStatus.ts'
+import { useAppDispatch, useAppSelector } from '../store/hooks.ts'
 
 const TOAST_DURATION_MS = 4_000
 
@@ -13,6 +28,12 @@ interface ToastState {
 export default function ConnectivityStatus() {
   const { isOnline } = useOnlineStatus()
   const queryClient = useQueryClient()
+  const dispatch = useAppDispatch()
+  const productsStatus = useAppSelector(selectProductsStatus)
+  const categoriesStatus = useAppSelector(selectCategoriesStatus)
+  const productDetailsStatus = useAppSelector(selectProductDetailsStatus)
+  const currentProductId = useAppSelector(selectProductDetailsCurrentId)
+  const productNotFound = useAppSelector(selectProductDetailsNotFound)
   const [toast, setToast] = useState<ToastState | null>(null)
   const previousOnlineRef = useRef<boolean | null>(null)
   const toastTimeoutRef = useRef<number | null>(null)
@@ -25,6 +46,22 @@ export default function ConnectivityStatus() {
 
     if (isOnline) {
       void queryClient.refetchQueries({ type: 'active' })
+
+      if (productsStatus === 'failed') {
+        void dispatch(fetchProducts())
+      }
+
+      if (categoriesStatus === 'failed') {
+        void dispatch(fetchCategories())
+      }
+
+      if (
+        productDetailsStatus === 'failed' &&
+        !productNotFound &&
+        currentProductId !== null
+      ) {
+        void dispatch(fetchProductDetails(currentProductId))
+      }
     }
 
     setToast({
@@ -42,7 +79,16 @@ export default function ConnectivityStatus() {
       setToast(null)
       toastTimeoutRef.current = null
     }, TOAST_DURATION_MS)
-  }, [isOnline, queryClient])
+  }, [
+    isOnline,
+    queryClient,
+    dispatch,
+    productsStatus,
+    categoriesStatus,
+    productDetailsStatus,
+    currentProductId,
+    productNotFound,
+  ])
 
   useEffect(() => {
     return () => {
