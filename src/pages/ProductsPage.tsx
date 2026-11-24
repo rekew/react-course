@@ -8,7 +8,7 @@ import SearchBar from '../components/SearchBar.tsx'
 import { Button } from '../components/ui/button.tsx'
 import {
   fetchProducts,
-  selectProductItems,
+  selectProductListPage,
   selectProductsError,
   selectProductsStatus,
 } from '../features/products/productsSlice.ts'
@@ -18,7 +18,6 @@ import { useAppDispatch, useAppSelector } from '../store/hooks.ts'
 const PAGE_SIZE = 12
 
 export default function ProductsPage() {
-  const products = useAppSelector(selectProductItems)
   const status = useAppSelector(selectProductsStatus)
   const error = useAppSelector(selectProductsError)
   const dispatch = useAppDispatch()
@@ -38,38 +37,24 @@ export default function ProductsPage() {
   const hasActiveSearch = normalizedQuery.length > 0
   const hasActiveFilters = normalizedCategory.length > 0 || minRating > 0
 
-  const filteredProducts = products.filter((product) => {
-    const matchesQuery =
-      !normalizedQuery ||
-      product.title.toLowerCase().includes(normalizedQuery)
-    const matchesCategory =
-      !normalizedCategory ||
-      product.category.toLowerCase() === normalizedCategory
-    const matchesRating = !minRating || product.rating >= minRating
-
-    return matchesQuery && matchesCategory && matchesRating
-  })
-
-  const sortedProducts = [...filteredProducts]
-
-  if (sort === 'price-asc') {
-    sortedProducts.sort((a, b) => a.price - b.price)
-  } else if (sort === 'price-desc') {
-    sortedProducts.sort((a, b) => b.price - a.price)
-  } else if (sort === 'rating-desc') {
-    sortedProducts.sort((a, b) => b.rating - a.rating)
-  } else if (sort === 'title-asc') {
-    sortedProducts.sort((a, b) => a.title.localeCompare(b.title))
-  }
-
   const parsedPage = pageParam ? Number(pageParam) : 1
   const requestedPage =
     Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1
-  const totalPages = Math.max(1, Math.ceil(sortedProducts.length / PAGE_SIZE))
-  const currentPage = Math.min(requestedPage, totalPages)
-  const paginatedProducts = sortedProducts.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE,
+
+  const {
+    items: paginatedProducts,
+    totalPages,
+    currentPage,
+    totalCount,
+  } = useAppSelector((state) =>
+    selectProductListPage(state, {
+      query: normalizedQuery,
+      category: normalizedCategory,
+      minRating,
+      sort,
+      page: requestedPage,
+      pageSize: PAGE_SIZE,
+    }),
   )
 
   useEffect(() => {
@@ -142,7 +127,7 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {!loading && !error && sortedProducts.length === 0 && (
+      {!loading && !error && totalCount === 0 && (
         <p className="text-sm text-muted-foreground">
           {hasActiveSearch || hasActiveFilters
             ? 'No products match your search or filters.'
@@ -150,7 +135,7 @@ export default function ProductsPage() {
         </p>
       )}
 
-      {!loading && !error && sortedProducts.length > 0 && (
+      {!loading && !error && totalCount > 0 && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {paginatedProducts.map((product) => (
             <ProductCard key={product.id} product={product} />

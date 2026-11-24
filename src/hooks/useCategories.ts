@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import {
   fetchCategories,
   selectCategoriesStatus,
-  selectCategoryItems,
+  selectSortedCategories,
 } from '../features/categories/categoriesSlice.ts'
 import { useAppDispatch, useAppSelector } from '../store/hooks.ts'
 
@@ -13,7 +13,7 @@ interface UseCategoriesResult {
 
 export function useCategories(): UseCategoriesResult {
   const dispatch = useAppDispatch()
-  const items = useAppSelector(selectCategoryItems)
+  const categories = useAppSelector(selectSortedCategories)
   const status = useAppSelector(selectCategoriesStatus)
 
   useEffect(() => {
@@ -21,7 +21,7 @@ export function useCategories(): UseCategoriesResult {
   }, [dispatch])
 
   return {
-    categories: [...items].sort((a, b) => a.localeCompare(b)),
+    categories,
     loading: status === 'idle' || status === 'loading',
   }
 }

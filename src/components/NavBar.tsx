@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Menu, X } from 'lucide-react'
 import { NavLink, useLocation } from 'react-router-dom'
+import { selectIsAuthenticated } from '../features/auth/authSlice.ts'
 import { useAuth } from '../hooks/useAuth.ts'
+import { useAppSelector } from '../store/hooks.ts'
 import ConnectivityStatus from './ConnectivityStatus.tsx'
 
 const links = [
@@ -20,7 +22,8 @@ function getNavLinkClass({ isActive }: { isActive: boolean }) {
 }
 
 export default function NavBar() {
-  const { user, loading, logout } = useAuth()
+  const { loading, logout } = useAuth()
+  const isAuthenticated = useAppSelector(selectIsAuthenticated)
   const [loggingOut, setLoggingOut] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const location = useLocation()
@@ -76,7 +79,7 @@ export default function NavBar() {
       ))}
 
       {!loading &&
-        (user ? (
+        (isAuthenticated ? (
           <>
             <NavLink
               to="/profile"

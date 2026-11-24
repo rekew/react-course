@@ -1,4 +1,8 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+import {
+  createAsyncThunk,
+  createSelector,
+  createSlice,
+} from '@reduxjs/toolkit'
 import { getProducts, type Product } from '../../services/service.ts'
 
 export type ProductsStatus = 'idle' | 'loading' | 'succeeded' | 'failed'
@@ -8,6 +12,25 @@ export interface ProductsState {
   status: ProductsStatus
   error: string | null
   requestId: string | null
+}
+
+export interface ProductListFilters {
+  query: string
+  category: string
+  minRating: number
+  sort: string
+}
+
+export interface ProductListPageParams extends ProductListFilters {
+  page: number
+  pageSize: number
+}
+
+export interface ProductListPage {
+  items: Product[]
+  totalPages: number
+  currentPage: number
+  totalCount: number
 }
 
 const initialState: ProductsState = {
@@ -78,3 +101,80 @@ export const selectProductsStatus = (state: { products: ProductsState }) =>
   state.products.status
 export const selectProductsError = (state: { products: ProductsState }) =>
   state.products.error
+
+export const selectFilteredSortedProducts = createSelector(
+  [
+    selectProductItems,
+    (
+      _state: { products: ProductsState },
+      filters: ProductListFilters,
+    ) => filters.query,
+    (
+      _state: { products: ProductsState },
+      filters: ProductListFilters,
+    ) => filters.category,
+    (
+      _state: { products: ProductsState },
+      filters: ProductListFilters,
+    ) => filters.minRating,
+    (
+      _state: { products: ProductsState },
+      filters: ProductListFilters,
+    ) => filters.sort,
+  ],
+  (items, query, category, minRating, sort) => {
+    const filteredProducts = items.filter((product) => {
+      const matchesQuery =
+        !query || product.title.toLowerCase().includes(query)
+      const matchesCategory =
+        !category || product.category.toLowerCase() === category
+      const matchesRating = !minRating || product.rating >= minRating
+
+      return matchesQuery && matchesCategory && matchesRating
+    })
+
+    if (sort === 'price-asc') {
+      filteredProducts.sort((a, b) => a.price - b.price)
+    } else if (sort === 'price-desc') {
+      filteredProducts.sort((a, b) => b.price - a.price)
+    } else if (sort === 'rating-desc') {
+      filteredProducts.sort((a, b) => b.rating - a.rating)
+    } else if (sort === 'title-asc') {
+      filteredProducts.sort((a, b) => a.title.localeCompare(b.title))
+    }
+
+    return filteredProducts
+  },
+)
+
+export const selectProductListPage = createSelector(
+  [
+    (
+      state: { products: ProductsState },
+      params: ProductListPageParams,
+    ) => selectFilteredSortedProducts(state, params),
+    (
+      _state: { products: ProductsState },
+      params: ProductListPageParams,
+    ) => params.page,
+    (
+      _state: { products: ProductsState },
+      params: ProductListPageParams,
+    ) => params.pageSize,
+  ],
+  (sortedProducts, requestedPage, pageSize): ProductListPage => {
+    const totalPages = Math.max(
+      1,
+      Math.ceil(sortedProducts.length / pageSize),
+    )
+    const currentPage = Math.min(Math.max(1, requestedPage), totalPages)
+    const start = (currentPage - 1) * pageSize
+
+    return {
+      items: sortedProducts.slice(start, start + pageSize),
+      totalPages,
+      currentPage,
+      totalCount: sortedProducts.length,
+    }
+  },
+)

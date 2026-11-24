@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+import { createAsyncThunk, createSelector, createSlice } from '@reduxjs/toolkit'
 import { getCategories } from '../../services/service.ts'
 
 export type CategoriesStatus = 'idle' | 'loading' | 'succeeded' | 'failed'
@@ -78,3 +78,8 @@ export const selectCategoriesStatus = (state: { categories: CategoriesState }) =
   state.categories.status
 export const selectCategoriesError = (state: { categories: CategoriesState }) =>
   state.categories.error
+
+export const selectSortedCategories = createSelector(
+  [selectCategoryItems],
+  (items) => [...items].sort((a, b) => a.localeCompare(b)),
+)

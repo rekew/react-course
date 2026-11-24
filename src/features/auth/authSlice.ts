@@ -1,5 +1,6 @@
 import {
   createAsyncThunk,
+  createSelector,
   createSlice,
   type PayloadAction,
 } from '@reduxjs/toolkit'
@@ -121,3 +122,8 @@ export const selectAuthLoading = (state: { auth: AuthState }) =>
 export const selectAuthError = (state: { auth: AuthState }) => state.auth.error
 export const selectAuthActionStatus = (state: { auth: AuthState }) =>
   state.auth.actionStatus
+
+export const selectIsAuthenticated = createSelector(
+  [selectAuthUser],
+  (user) => user !== null,
+)
