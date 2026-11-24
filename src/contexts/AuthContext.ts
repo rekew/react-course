@@ -11,6 +11,7 @@ export interface AuthContextValue {
   signInWithGoogle: () => Promise<void>
   logout: () => Promise<void>
   clearError: () => void
+  signupLoading: boolean
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(

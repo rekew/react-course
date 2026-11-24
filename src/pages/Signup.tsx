@@ -17,13 +17,12 @@ interface FieldErrors {
 }
 
 export default function Signup() {
-  const { user, error, signup, clearError } = useAuth()
+  const { user, error, signup, clearError, signupLoading } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
-  const [submitting, setSubmitting] = useState(false)
 
   const authError = getAuthErrorMessage(error)
 
@@ -79,12 +78,7 @@ export default function Signup() {
       return
     }
 
-    setSubmitting(true)
-    try {
-      await signup(email.trim(), password)
-    } finally {
-      setSubmitting(false)
-    }
+    await signup(email.trim(), password)
   }
 
   return (
@@ -100,7 +94,7 @@ export default function Signup() {
         <form
           className="mt-6 space-y-5"
           onSubmit={handleSubmit}
-          aria-busy={submitting}
+          aria-busy={signupLoading}
           noValidate
         >
           <div className="space-y-2">
@@ -113,7 +107,7 @@ export default function Signup() {
               className="h-11"
               value={email}
               onChange={handleEmailChange}
-              disabled={submitting}
+              disabled={signupLoading}
               aria-invalid={Boolean(fieldErrors.email)}
               aria-describedby={
                 fieldErrors.email ? 'signup-email-error' : undefined
@@ -140,7 +134,7 @@ export default function Signup() {
               className="h-11"
               value={password}
               onChange={handlePasswordChange}
-              disabled={submitting}
+              disabled={signupLoading}
               aria-invalid={Boolean(fieldErrors.password)}
               aria-describedby={
                 fieldErrors.password ? 'signup-password-error' : undefined
@@ -167,7 +161,7 @@ export default function Signup() {
               className="h-11"
               value={confirmPassword}
               onChange={handleConfirmPasswordChange}
-              disabled={submitting}
+              disabled={signupLoading}
               aria-invalid={Boolean(fieldErrors.confirmPassword)}
               aria-describedby={
                 fieldErrors.confirmPassword
@@ -191,9 +185,9 @@ export default function Signup() {
               type="submit"
               size="lg"
               className="h-11 w-full"
-              disabled={submitting}
+              disabled={signupLoading}
             >
-              {submitting ? 'Creating account…' : 'Sign up'}
+              {signupLoading ? 'Creating account…' : 'Sign up'}
             </Button>
           </div>
 

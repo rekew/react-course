@@ -4,7 +4,6 @@ import { auth } from '../config/firebase.ts'
 import {
   AuthServiceError,
   logOut,
-  registerWithEmail,
   signInWithEmail,
   signInWithGoogle as signInWithGoogleRequest,
   toAuthServiceError,
@@ -14,9 +13,11 @@ import {
   authErrorSet,
   authLoadingChanged,
   authUserChanged,
+  selectAuthActionStatus,
   selectAuthError,
   selectAuthLoading,
   selectAuthUser,
+  signupWithEmail,
 } from '../features/auth/authSlice.ts'
 import { useAppDispatch, useAppSelector } from '../store/hooks.ts'
 import { AuthContext, type AuthContextValue } from './AuthContext.ts'
@@ -30,6 +31,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const user = useAppSelector(selectAuthUser)
   const loading = useAppSelector(selectAuthLoading)
   const storedError = useAppSelector(selectAuthError)
+  const actionStatus = useAppSelector(selectAuthActionStatus)
 
   const error = useMemo(
     () =>
@@ -81,9 +83,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   )
 
   const signup = useCallback(
-    (email: string, password: string) =>
-      runAuthAction(() => registerWithEmail(email, password)),
-    [runAuthAction],
+    async (email: string, password: string) => {
+      await dispatch(signupWithEmail({ email, password }))
+    },
+    [dispatch],
   )
 
   const login = useCallback(
@@ -117,8 +120,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       signInWithGoogle,
       logout,
       clearError,
+      signupLoading: actionStatus === 'loading',
     }),
-    [user, loading, error, signup, login, signInWithGoogle, logout, clearError],
+    [
+      user,
+      loading,
+      error,
+      signup,
+      login,
+      signInWithGoogle,
+      logout,
+      clearError,
+      actionStatus,
+    ],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
